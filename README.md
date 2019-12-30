@@ -1,4 +1,4 @@
-# Analog RNN # 
+# Analog RNN paper # 
 Cool interpretation of the wave equation reformulated as the RNN update equations. This is an attempt to replicate the work thought about
 in https://arxiv.org/pdf/1904.12831.pdf.
 
