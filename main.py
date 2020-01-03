@@ -22,8 +22,12 @@ def load_audio(file, sr=None, normalize=True):
 
     return data
 
+
 def load_all_audio(dir, sr=16000):
     """Loads all audio files in a given directory"""
+    data = []
     for fil in os.listdir(dir):
         with open(fil) as f:
-            load_audio(f, sr)
+            d = load_audio(f, sr)
+            data.append(d)
+    return data
