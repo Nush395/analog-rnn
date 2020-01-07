@@ -1,6 +1,6 @@
 # Analog RNN paper # 
 Cool interpretation of the wave equation reformulated as the RNN update equations. This is an attempt to replicate the work thought about
-in https://arxiv.org/pdf/1904.12831.pdf.
+in https://arxiv.org/pdf/1904.12831.pdf. (This isn't my original work! Just trying to have a play from a cool paper and their code found at - https://github.com/fancompute/wavetorch)
 
 ## Summary ##
 The general idea of the paper is by reformulating the wave equation (written out using finite difference methods) as the
