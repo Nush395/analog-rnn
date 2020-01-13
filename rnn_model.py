@@ -5,10 +5,23 @@ import numpy as np
 
 class WaveModule(tf.Module):
     def __init__(self, dt, b, Nx, Ny):
-        """Analog to the RNN"""
+        """Class to compute iterations of the wave equation
+
+        Args:
+            dt: float
+            Time step
+            b: (float, float)
+            The damping parameter
+            Nx : int
+            Number of x-direction grid cells in the computational domain
+            Ny : int
+            Number of y-direction grid cells in the computational domain
+        """
         super().__init__()
         self.dt = tf.constant(dt, name='dt')
-        c = np.zeros([Nx, Ny])
+        self.Nx = Nx
+        self.Ny = Ny
+        c = np.ones([Nx, Ny])
         self.c = tf.Variable(c, name='c', trainable=True)
         self.b = tf.constant(b, name='b')
         self.laplacian = tf.reshape(tf.constant([[0.0,  1.0,  0.0],
@@ -16,6 +29,17 @@ class WaveModule(tf.Module):
                                                  [0.0,  1.0,  0.0]],
                                                 dtype='float32'),
                                     [3, 3, 1, 1])
+
+    def compute_laplacian(self, field):
+        """Compute  the laplacian of the given field. Uses the conv2d operator
+        which expects the filter to be in format: (filter_height, filter_width,
+        in_width, in_channels)
+
+        Args:
+            field: Field is expected to be in the shape of (batch_n, in_height,
+            in_width). Number of channels is set to one."""
+        out = tf.nn.conv2d(tf.expand_dims(field, 3), self.laplacian, 1, "SAME")
+        return tf.squeeze(out, 3)
 
     def time_step(self, x, y1, y2):
         """Take a step through time.
@@ -30,18 +54,12 @@ class WaveModule(tf.Module):
         c = self.c
         b = self.b
 
-        term_one = 2 + dt**(-2)*math.multiply(c.pow(2),
-                                              tf.squeeze(tf.nn.conv2d(
-                                                  tf.expand_dims(y1, 3),
-                                                  self.laplacian,
-                                                  1,
-                                                  "SAME"),
-                                                  1))
+        term_a = 2 + dt**2*math.multiply(c.pow(2), self.compute_laplacian(y1))
 
         term_two = math.multiply(-1 - dt * b, y2)
         denominator = dt ** (-2) + b * 0.5 * dt ** (-1)
         y = math.multiply(denominator.pow(-1),
-                          math.add(term_one, term_two))
+                          math.add(term_a, term_two))
 
         # Insert the source
         y_out = y[:, self.src_x, self.src_y]
