@@ -1,17 +1,17 @@
 import tensorflow as tf
-from rnn_model import model
+from rnn_model import WaveModule
 import time
-from main import load_all_audio
+from data import load_all_audio
 
 
 input_dir = ""
-data = load_all_audio(input_dir)
+data, labels = load_all_audio(input_dir)
 
 
 loss_func = tf.keras.losses.BinaryCrossentropy()
 optimizer = tf.keras.optimizers.Adam()
 
-
+model = WaveModule()
 def train_loop(input, ground_truth):
     with tf.GradientTape() as tape:
         outputs = model(input)
