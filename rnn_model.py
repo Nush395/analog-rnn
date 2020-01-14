@@ -2,20 +2,21 @@ from tensorflow import math
 import tensorflow as tf
 import numpy as np
 
+LAP = [[0.0,  1.0,  0.0],
+       [1.0, -4.0,  1.0],
+       [0.0,  1.0,  0.0]]
 
-class WaveModule(tf.Module):
-    def __init__(self, dt, b, Nx, Ny):
+
+class WaveLayer(tf.keras.layers.Layer):
+    def __init__(self, dt, h, b, Nx, Ny):
         """Class to compute iterations of the wave equation
 
         Args:
-            dt: float
-            Time step
-            b: (float, float)
-            The damping parameter
-            Nx : int
-            Number of x-direction grid cells in the computational domain
-            Ny : int
-            Number of y-direction grid cells in the computational domain
+            dt: computational time step size
+            h: computational spatial step size
+            b: damping parameter
+            Nx : number of x-direction grid cells in the computational domain
+            Ny : number of y-direction grid cells in the computational domain
         """
         super().__init__()
         self.dt = tf.constant(dt, name='dt')
@@ -24,11 +25,10 @@ class WaveModule(tf.Module):
         c = np.ones([Nx, Ny])
         self.c = tf.Variable(c, name='c', trainable=True)
         self.b = tf.constant(b, name='b')
-        self.laplacian = tf.reshape(tf.constant([[0.0,  1.0,  0.0],
-                                                 [1.0, -4.0,  1.0],
-                                                 [0.0,  1.0,  0.0]],
-                                                dtype='float32'),
-                                    [3, 3, 1, 1])
+
+        self.laplacian = tf.constant(LAP, dtype='float32') / h**2
+        # reshape to be in the format expected by the conv2d operator
+        self.laplacian = tf.reshape(self.laplacian, [3, 3, 1, 1])
 
     def compute_laplacian(self, field):
         """Compute  the laplacian of the given field. Uses the conv2d operator
@@ -36,8 +36,9 @@ class WaveModule(tf.Module):
         in_width, in_channels)
 
         Args:
-            field: Field is expected to be in the shape of (batch_n, in_height,
-            in_width). Number of channels is set to one."""
+            field: Scalar wave field, expected to be in the shape of
+            (batch_n, in_height, in_width).
+        """
         out = tf.nn.conv2d(tf.expand_dims(field, 3), self.laplacian, 1, "SAME")
         return tf.squeeze(out, 3)
 
@@ -67,7 +68,7 @@ class WaveModule(tf.Module):
 
         return y_out, y1
 
-    def __call__(self, x, probe_output=True):
+    def __call__(self, x, probes):
         """Propagate forward in time for the length of the input.
 
         Parameters
@@ -94,8 +95,26 @@ class WaveModule(tf.Module):
             y_all.append(y)
 
         y = tf.stack(y_all, axis=1)
+        total_sum = 0
+        y_outs = []
+        for probe_crd in probes:
+            px, py = probe_crd
+            y_out = math.reduce_sum(math.square(y[:,:,px,py]))
+            total_sum += y_out
+            y_outs.append(y_out)
 
-        return y
+        y_outs = tf.constant(y_outs) / total_sum
+
+        return y_outs
+
+
+class WaveModel(tf.keras.Model):
+    def __init__(self, dt, h, b, Nx, Ny):
+        super().__init__()
+        self.wave_layer = WaveLayer(dt, h, b, Nx, Ny)
+
+    def call(self, input, probes):
+        return self.wave_layer(input, probes)
 
 
 def sat_damp(u, uth=1.0, b0=1.0):
