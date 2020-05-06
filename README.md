@@ -1,5 +1,5 @@
 ### This repo ###
-This repo is a work in progress, if you stumble across this repo I'm by no means a tensorflow expert so if you spot something amiss I would appreciate any feedback!
+This repo is a work in progress, if you stumble across this repo I'm by no means a tensorflow expert so if you spot something amiss I would appreciate any feedback! Thank you
 
 # Analog RNN paper # 
 Cool interpretation of the wave equation reformulated as the RNN update equations. This is an attempt to replicate the work thought about
