@@ -68,7 +68,7 @@ class WaveLayer(tf.keras.layers.Layer):
 
         return y_out, y1
 
-    def __call__(self, x, probes):
+    def call(self, x, probes):
         """Propagate forward in time for the length of the input.
 
         Parameters

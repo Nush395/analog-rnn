@@ -1,4 +1,4 @@
-from rnn_model import WaveLayer
+from wave_rnn import WaveLayer
 import unittest
 import tensorflow as tf
 
