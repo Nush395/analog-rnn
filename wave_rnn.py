@@ -63,10 +63,11 @@ class WaveLayer(tf.keras.layers.Layer):
         y = math.subtract(y, y2)
 
         # Insert the source
-        y_out = y[:, self.src_x, self.src_y]
-        y_out = y_out + tf.broadcast_to(x, tf.shape(y_out))
+        src = tf.zeros(y.shape)
+        src[self.src_x, self.src_y] = x
+        y = math.add(y, math.multiply(math.square(dt), src))
 
-        return y_out, y1
+        return y, y1
 
     def call(self, inputs, **kwargs):
         """Propagate forward in time for the length of the input.
@@ -78,13 +79,13 @@ class WaveLayer(tf.keras.layers.Layer):
         batch_size = inputs.shape[0]
 
         # init hidden states
+        y = tf.zeros([batch_size, self.Nx, self.Ny], dtype=tf.dtypes.float32)
         y1 = tf.zeros([batch_size, self.Nx, self.Ny], dtype=tf.dtypes.float32)
-        y2 = tf.zeros([batch_size, self.Nx, self.Ny], dtype=tf.dtypes.float32)
         y_all = []
 
+        # iterate sequence through time and collect output
         for xi in inputs:
-            # iterate sequence through time and collect output
-            y, y1 = self.time_step(xi, y1, y2)
+            y, y1 = self.time_step(xi, y, y1)
             y_all.append(y)
 
         y = tf.stack(y_all, axis=1)
